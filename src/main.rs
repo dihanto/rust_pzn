@@ -881,7 +881,7 @@ trait CanSay : CanSayHello + CanSayGoodBye{
     }
 }
 
-struct Point<T>{
+struct Point<T = i32>{
     x: T,
     y: T,
 }
@@ -917,7 +917,7 @@ fn test_generic_enum() {
     }
 }
 
-struct Hi<T: CanSayGoodBye>{
+struct Hi<T> where T: CanSayGoodBye{
     value: T,
 }
 
@@ -930,4 +930,415 @@ fn test_generic_bound() {
     };
     println!("{}", hi.value.name)
 
+}
+
+fn min<T: PartialOrd>(value1: T, value2: T) -> T {
+ if value1 < value2 {
+     value1
+ } else {
+     value2
+ }
+}
+
+#[test]
+fn generic_in_function() {
+    let result = min::<i32>(10,20);
+    println!("{}", result)
+}
+
+impl<T> Point<T>{
+    fn get_x(&self) -> &T{
+        &self.x
+    }
+    fn get_y(&self) -> &T{
+        &self.y
+    }
+}
+
+#[test]
+fn test_generic_method() {
+    let point = Point{x: 10, y: 20};
+    println!("{}", point.get_x());
+    println!("{}", point.get_y());
+    println!("{}", point.get_value());
+
+
+}
+
+trait GetValue<T> where T: PartialOrd{
+    fn get_value(&self) -> &T;
+}
+
+impl<T> GetValue<T> for Point<T> where T: PartialOrd{
+    fn get_value(&self) -> &T{
+        &self.x
+    }
+}
+
+struct Apple{
+    quantity: i32,
+}
+
+use core::ops::Add;
+use std::cmp::Ordering;
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, LinkedList, VecDeque};
+
+impl Add for Apple {
+    type Output = Apple;
+    fn add(self, rhs: Self) -> Self::Output {
+        Apple{
+            quantity: self.quantity + rhs.quantity,
+        }
+    }
+}
+
+
+
+#[test]
+fn test_operator_add() {
+    let apple1 = Apple{quantity: 6};
+    let apple2 = Apple{quantity: 7};
+
+    let apple3 = apple1 + apple2;
+
+    println!("{}", apple3.quantity);
+}
+
+fn double(x: Option<i32>) -> Option<i32>{
+    match x {
+        None => None,
+        Some(i) => Some(i *2),
+    }
+}
+
+#[test]
+fn test_option() {
+    let result = double(Some(10));
+    println!("{:?}", result);
+
+    let result = double(None);
+    println!("{:?}", result)
+}
+
+impl PartialEq for Apple {
+    fn eq(&self, other: &Self) -> bool {
+        self.quantity == other.quantity
+    }
+}
+
+impl PartialOrd for Apple {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.quantity.partial_cmp(&other.quantity)
+    }
+}
+
+#[test]
+fn test_compare() {
+    let apple1 = Apple{quantity: 10};
+    let apple2 = Apple{quantity: 20};
+
+    println!("Apple1 == Apple2 : {}", apple1 == apple2);
+    println!("Apple1 < Apple2 : {}", apple1 < apple2);
+    println!("Apple1 > Apple2 : {}", apple1 > apple2);
+}
+
+#[test]
+fn test_string_manipulation() {
+    let s = String::from("Hari ini adalah hari minggu");
+
+    println!("{}", s.to_uppercase());
+    println!("{}", s.to_lowercase());
+    println!("{}", s.len());
+    println!("{}", s.replace("minggu", "senin"));
+    println!("{}", s.contains("minggu"));
+    println!("{}", s.starts_with("Hari"));
+    println!("{}", s.ends_with("minggu"));
+    println!("{}", s.trim());
+    println!("{}", &s[0..3]);
+    println!("{:?}", s.get(0..3));
+}
+
+struct Category {
+    id: String,
+    name: String,
+}
+
+use std::fmt::{Debug, Formatter};
+impl Debug for Category{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Category")
+            .field("id", &self.id)
+            .field("name", &self.name)
+            .finish()
+    }
+}
+#[test]
+fn test_formatting() {
+    let category = Category {
+        name: String::from("Gadget"),
+        id: String::from("GADGET")
+    };
+
+    println!("{:?}", category)
+}
+
+#[test]
+fn test_closure() {
+    let sum: fn(i32, i32) -> i32 = |value1: i32, value2: i32| -> i32{
+        value1 + value2
+    };
+
+    let result = sum(1,2);
+    println!("Result : {}", result);
+}
+
+fn print_with_filter(value: String, filter: fn(String) -> String){
+    let result = filter(value);
+    println!("Result: {}", result);
+}
+
+#[test]
+fn test_closure_as_parameter() {
+    let filter = |value: String | -> String{
+        value.to_uppercase()
+    };
+    print_with_filter(String::from("Eko"), filter)
+}
+
+fn to_uppercase(value: String) -> String{
+    value.to_uppercase()
+}
+
+#[test]
+fn test_function_as_closure() {
+    print_with_filter(String::from("Eko"), to_uppercase)
+}
+
+struct Counter {
+    counter: i32,
+}
+
+impl Counter{
+    fn increment(&mut self){
+        self.counter += 1;
+        println!("Increment")
+    }
+}
+
+#[test]
+fn  test_counter() {
+    let mut counter = Counter{counter: 0};
+    counter.increment();
+    counter.increment();
+    counter.increment();
+
+    println!("Counter : {}", counter.counter)
+
+}
+#[test]
+fn test_closure_scopre() {
+    let mut counter = 0;
+    let mut increment = ||
+        {
+            counter += 1;
+            println!("Increment");
+        };
+    increment();
+    increment();
+    increment();
+
+    println!("Counter: {}", counter)
+}
+
+#[test]
+fn test_vector() {
+    let mut names: Vec<String> = Vec::<String>::new();
+    names.push(String::from("Eko"));
+    names.push(String::from("Kurniawan"));
+    names.push(String::from("Khanedy"));
+
+    for name in &names{
+        println!("{}", name);
+    }
+
+    println!("{:?}", names);
+}
+
+#[test]
+fn test_vec_deque() {
+    let mut names: VecDeque<String> = VecDeque::<String>::new();
+    names.push_back(String::from("Eko"));
+    names.push_back(String::from("Kurniawan"));
+    names.push_front(String::from("Khannedy"));
+
+    for name in &names{
+        println!("{}", name);
+    }
+
+    println!("{:?}", names);
+}
+
+#[test]
+fn test_linked_list() {
+    let mut names: LinkedList<String> = LinkedList::<String>::new();
+    names.push_back(String::from("Eko"));
+    names.push_back(String::from("Kurniawan"));
+    names.push_front(String::from("Khannedy"));
+
+    for name in &names{
+        println!("{}", name);
+    }
+
+    println!("{:?}", names);
+}
+
+#[test]
+fn test_hash_map() {
+    let mut map: HashMap<String, String> = HashMap::new();
+
+    map.insert(String::from("name"), String::from("Eko"));
+    map.insert(String::from("age"), String::from("25"));
+
+    let name = map.get("name");
+    let age = map.get("age");
+
+    println!("{}", name.unwrap());
+    println!("{}", age.unwrap())
+}
+
+#[test]
+fn test_btree_map() {
+    let mut map: BTreeMap<String, String> = BTreeMap::new();
+
+    map.insert(String::from("name"), String::from("Eko"));
+    map.insert(String::from("age"), String::from("25"));
+    map.insert(String::from("country"), String::from("Indonesia"));
+
+
+    for entry in map{
+        println!("{} : {}", entry.0, entry.1);
+    }
+}
+
+#[test]
+fn test_hash_set() {
+    let mut set : HashSet<String> = HashSet::new();
+    set.insert(String::from("Eko"));
+    set.insert(String::from("Eko"));
+    set.insert(String::from("Kurniawan"));
+    set.insert(String::from("Kurniawan"));
+    set.insert(String::from("Khannedy"));
+    set.insert(String::from("Khannedy"));
+
+    for value in set {
+        println!("{}", value);
+    }
+}
+
+#[test]
+fn test_btree_set() {
+    let mut set : BTreeSet<String> = BTreeSet::new();
+    set.insert(String::from("Eko"));
+    set.insert(String::from("Eko"));
+    set.insert(String::from("Kurniawan"));
+    set.insert(String::from("Kurniawan"));
+    set.insert(String::from("Khannedy"));
+    set.insert(String::from("Khannedy"));
+
+    for value in set {
+        println!("{}", value);
+    }
+}
+
+#[test]
+fn test_iterator() {
+    let array: [i32; 5] = [1,2,3,4,5];
+    let mut iterator = array.iter();
+
+    while let Some(value) = iterator.next(){
+        println!("{}", value);
+    };
+
+    for value in iterator {
+        println!("{}", value);
+    }
+}
+
+#[test]
+fn test_iterator_method() {
+    let vector: Vec<i32> = vec![1,2,3,4,5,6,7,8,9,10];
+    println!("Vector: {:?}", vector);
+    let sum: i32 = vector.iter().sum();
+    println!("Sum : {}", sum);
+
+    let counter = vector.iter().count();
+    println!("{}", counter);
+
+    let doubled : Vec<i32> = vector.iter().map(|x| x * 2).collect();
+    println!("{:?}", doubled);
+
+    let odd: Vec<&i32> = vector.iter().filter(|x| *x % 2 != 0).collect();
+    println!("{:?}", odd);
+}
+
+fn connect_database(host: Option<String>){
+    match host {
+        Some(host) => {
+            println!("Connecting to database {}", host)
+        }
+        None => {
+            panic!("No database host provided")
+        }
+    }
+}
+
+#[test]
+fn test_panic() {
+    connect_database(Some(String::from("Localhost")));
+    // connect_database(None);
+}
+
+fn connect_cache(host: Option<String>) -> Result<String, String>{
+    match host{
+        Some(host) => Ok(host),
+        None => Err("No cache host provided".to_string())
+    }
+}
+
+#[test]
+fn test_recoverable_error() {
+    // let cache = connect_cache(Some("localhost".to_string()));
+    let cache = connect_cache(None);
+
+    match cache {
+        Ok(host) => {
+            println!("Success connect to host : {}", host)
+        }
+        Err(error) => {
+            println!("Error with message : {}", error)
+        }
+    }
+}
+
+fn connect_email(host: Option<String>) -> Result<String, String>{
+    match host{
+        Some(host) => Ok(host),
+        None => Err("No email host provided".to_string())
+    }
+}
+
+fn connect_application(host: Option<String>) -> Result<String, String>{
+    connect_cache(host.clone())?;
+    connect_email(host.clone())?;
+
+    Ok("Connected to application".to_string())
+}
+
+#[test]
+fn test_application_error() {
+    let result = connect_application(None);
+    match result {
+        Ok(host) => {println!("success connect with message : {}", host)}
+        Err(err) => {println!("error with message : {}", err)}
+    }
 }
