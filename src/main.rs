@@ -980,6 +980,7 @@ struct Apple{
 }
 
 use core::ops::Add;
+use std::cell::{RefCell, RefMut};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, LinkedList, VecDeque};
 
@@ -1064,6 +1065,9 @@ struct Category {
 }
 
 use std::fmt::{Debug, Formatter};
+use std::ops::Deref;
+use std::rc::Rc;
+
 impl Debug for Category{
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Category")
@@ -1341,4 +1345,306 @@ fn test_application_error() {
         Ok(host) => {println!("success connect with message : {}", host)}
         Err(err) => {println!("error with message : {}", err)}
     }
+}
+
+#[test]
+fn test_dangling_reference() {
+    let r: &i32;
+    {
+        let x: i32 = 5;
+        // r = &x; error dangling reference
+    }
+    r = &12;
+    println!("r: {}", r);
+}
+
+fn longest<'a>(value1: &'a str, value2: &'a str) -> &'a str{
+    if value1.len() > value2.len(){
+        value1
+    } else{
+        value2
+    }
+}
+#[test]
+fn test_lifetime_annotation() {
+    let value1 = "Eko";
+    let value2 = "Kurniawan";
+    let result = longest(value1, value2,);
+    println!("Result : {}", result)
+}
+
+#[test]
+fn test_lifetime_annotation_dangling_reference() {
+    let string1 = String::from("Eko");
+    let string2 = String::from("Kurniawan");
+    let result;
+    {
+        // let string2 = String::from("Kurniawan");
+        result = longest(string1.as_str(), string2.as_str());
+    }
+    println!("{}", result)
+}
+
+struct Student<'a>{
+    name: &'a str,
+}
+
+fn longest_student_name<'a>(student1: &Student<'a>, student2: &Student<'a>) -> &'a str{
+    if student1.name.len() > student2.name.len(){
+        student1.name
+    } else {
+        student2.name
+    }
+}
+#[test]
+fn test_student_name() {
+    let student1 = Student{
+        name: "Khannedy"
+    };
+    let student2 = Student{
+        name: "Khannnnedy"
+    };
+    let result = longest_student_name(&student1, &student2);
+    println!("{}", result);
+
+    let result = student1.longest_name(&student2);
+    println!("{}", result);
+}
+
+impl<'a> Student<'a>{
+    fn longest_name(&self, student: &Student<'a>) -> &'a str{
+        if self.name.len() > student.name.len(){
+            self.name
+        } else {
+            student.name
+        }
+    }
+}
+
+struct Teacher<'a, ID> where ID: Ord{
+    id: ID,
+    name: &'a str,
+}
+
+#[test]
+fn test_lifetime_annnotation_generic() {
+    let teacher: Teacher<i32> = Teacher{
+        id: 10,
+        name: "Eko",
+    };
+
+    println!("{}", teacher.id);
+    println!("{}", teacher.name)
+}
+
+#[derive(Debug, PartialEq, PartialOrd)]
+struct Company{
+    name: String,
+    location: String,
+    website: String,
+}
+
+#[test]
+fn test_attribute_derive() {
+    let company = Company{
+        name: "Rust".to_string(),
+        location: "USA".to_string(),
+        website: "rust.com".to_string(),
+    };
+
+    let company2 = Company{
+        name: "Rust".to_string(),
+        location: "USA".to_string(),
+        website: "rust.com".to_string(),
+    };
+    let result = company == company2;
+    println!("{}", result);
+
+    println!("{:?}", company);
+}
+
+#[test]
+fn test_box() {
+    let value: Box<i32> = Box::new(10);
+    println!("value : {}", value);
+    display_number(*value);
+    display_number_reference(&value);
+}
+
+fn display_number(value: i32){
+    println!("{}", value);
+}
+fn display_number_reference(value: &i32){
+    println!("{}", value);
+}
+
+#[derive(Debug)]
+enum ProductCategory{
+    Of(String, Box<ProductCategory>),
+    End
+}
+
+#[test]
+fn test_box_enum() {
+    let category = ProductCategory::Of(
+        "Laptop".to_string(),
+        Box::new(ProductCategory::Of(
+            "Dell".to_string(),
+            Box::new(ProductCategory::End)
+        )),
+    );
+    println!("{:?}", category);
+}
+
+#[test]
+fn test_dereference() {
+    let value1 = Box::new(10);
+    let value2 = Box::new(20);
+    let result = *value1 * *value2;
+    println!("{}", result)
+}
+
+struct MyValue<T>{
+    value: T,
+}
+
+impl<T> Deref for MyValue<T>{
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+#[test]
+fn test_deref() {
+    let value = MyValue{value: 10};
+    let real_value: i32 = *value;
+    println!("value : {}", real_value)
+}
+
+fn say_hello_reference(name: &String){
+    println!("Hello, {}",name)
+}
+
+#[test]
+fn test_deref_reference() {
+    let name = MyValue{
+        value: "eko".to_string(),
+    };
+    say_hello_reference(&name)
+}
+
+struct Book{
+    title: String,
+}
+
+impl Drop for Book{
+    fn drop(&mut self){
+        println!("Dropping Book : {}", self.title)
+    }
+}
+
+#[test]
+fn test_drop() {
+    let book = Book{title: "Rust Programming".to_string()};
+    println!("{}", book.title)
+}
+
+enum Brand{
+    Of(String, Rc<Brand>),
+    End
+}
+#[test]
+fn test_multiple_ownership_box() {
+    // let apple = ProductCategory::Of("Apple".to_string(), Box::new(ProductCategory::End));
+    // let laptop = ProductCategory::Of("Laptop".to_string(), Box::new(apple));
+    // let smartphone = ProductCategory::Of("Smartphone".to_string(), Box::new(apple));
+
+    let apple: Rc<Brand> = Rc::new(Brand::Of("Apple".to_string(), Rc::new(Brand::End)));
+    println!("Apple reference count : {}", Rc::strong_count(&apple));
+    let laptop = Brand::Of("Laptop".to_string(), Rc::clone(&apple));
+    println!("Apple reference count : {}", Rc::strong_count(&apple));
+    {
+        let smartphone = Brand::Of("Smartphone".to_string(), Rc::clone(&apple));
+        println!("Apple reference count : {}", Rc::strong_count(&apple));
+    }
+    println!("Apple reference count : {}", Rc::strong_count(&apple));
+
+}
+#[derive(Debug)]
+struct Seller{
+    name: RefCell<String>,
+    active: RefCell<bool>,
+}
+
+#[test]
+fn test_ref_cell() {
+    let seller = Seller{
+        name: RefCell::new("Eko".to_string()),
+        active: RefCell::new(true)
+    };
+    {
+        let mut result : RefMut<String> = seller.name.borrow_mut();
+        *result = "budi".to_string();
+    }
+
+    println!("{:?}", seller)
+}
+
+static APPLICATION: &str = "My Application";
+
+#[test]
+fn test_static() {
+    println!("{}", APPLICATION)
+}
+
+static mut COUNTER: i32 = 0;
+unsafe fn increment(){
+    COUNTER += 1;
+}
+
+#[test]
+fn test_static_mut() {
+    unsafe{
+        increment();
+        COUNTER +=1;
+        println!("{}", COUNTER)
+    }
+}
+
+macro_rules! hi {
+    () => {
+        println!("Hi")
+    };
+    ($name: expr) => {
+        println!("Hi {}!", $name);
+    }
+}
+
+#[test]
+fn test_macro() {
+    hi!();
+    hi!("Tooo");
+    hi!{
+        "Tooo"
+    };
+}
+
+macro_rules! iterate {
+    ($array:expr) => {
+        for i in $array{
+            println!("{}", i)
+        }
+    };
+    ($($item: expr), *) => {
+        $(
+        println!("{}", $item);
+        )*
+    }
+}
+
+#[test]
+fn test_macro_iterate() {
+    iterate!([1,2,4,5,5,6,7,8,9,10]);
+    iterate!(1,2,4,5,5,6,7,8,9,10)
 }
